@@ -1,0 +1,6 @@
+[submodule "MetaPhysicL"]
+	path = MetaPhysicL
+	url = https://github.com/roystgnr/MetaPhysicL.git
+[submodule "eigen"]
+	path = eigen
+	url = https://gitlab.com/libeigen/eigen.git
