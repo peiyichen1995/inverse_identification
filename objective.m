@@ -1,6 +1,6 @@
 function [f,g,H] = objective(x, lambda1_filename, sigma_exp_filename)
 
-writematrix([x;1],'x.csv','Delimiter',' ');
+writematrix([x;0.9],'x.csv','Delimiter',' ');
 
 system(['./objective ', lambda1_filename, ' ', sigma_exp_filename]);
 

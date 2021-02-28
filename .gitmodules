@@ -4,3 +4,6 @@
 [submodule "eigen"]
 	path = eigen
 	url = https://gitlab.com/libeigen/eigen.git
+[submodule "petsc"]
+	path = petsc
+	url = https://gitlab.com/petsc/petsc.git
