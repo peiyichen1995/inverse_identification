@@ -1,37 +1,60 @@
 #pragma once
 
-#include <iostream>
-#include <vector>
-#include <map>
-
 #include "Types.hpp"
+#include "Utils.hpp"
+
+class Variable;
+class Objective;
+class Solver;
 
 class Problem
 {
 public:
-  Problem() {}
-  virtual ~Problem() {}
+  Problem();
+  virtual ~Problem();
 
-  virtual void init();
-  virtual void printInfo(std::ostream & os = std::cout) const;
-  void printVariableValues(std::ostream & os = std::cout) const;
+  void init();
 
-  void addVariable(std::string var_name);
-  void addVariables(std::vector<std::string> var_names);
-  void addAuxVariable(std::string var_name);
-  void addAuxVariables(std::vector<std::string> var_names);
-  unsigned int getVariableIndex(std::string var_name) const;
-  std::vector<unsigned int> getVariableIndices(std::vector<std::string> var_names) const;
-  const ADReal & getVariableValue(std::string var_name) const;
+  // @{ Dof related APIs
+  std::vector<DofId> dofs() const { return _dofs; }
+  std::vector<Real> dofValues() const;
+  void setDofValues(const std::vector<Real> & v);
+  void setDofValues(const Real * v);
+  // @}
 
-  void setVariableValue(unsigned int i, Real v);
-  void setVariableValue(std::string var_name, Real v);
-  void setVariableValue(const Vector & x);
+  // @{ Variable related APIs
+  Variable * variable(const VariableName name) const;
+  unsigned int numVars() const { return _variables.size(); }
+  void addVariable(hit::Node * params, const bool primary = true);
+  // @}
+
+  // @{ Objective related APIs
+  Objective * objective() const { return _objective; }
+  void addObjective(hit::Node * params);
+  Vector gradient(const ADReal & v) const;
+  Matrix Hessian(const ADReal & v) const;
+  // @}
+
+  // @{ Solver related APIs
+  void addSolver(hit::Node * params);
+  void solve();
+  // @}
 
 protected:
-  std::map<std::string, unsigned int> _variables;
-  std::map<std::string, unsigned int> _aux_variables;
-
 private:
-  std::vector<ADReal> _values;
+  void initVariableDerivatives();
+
+  DofMap _dof_map;
+  std::vector<DofId> _dofs;
+
+  std::vector<Variable *> _variables;
+  std::vector<Variable *> _primary_variables;
+
+  Objective * _objective;
+
+  Solver * _solver;
+
+  friend std::ostream & operator<<(std::ostream & os, const Problem & p);
 };
+
+std::ostream & operator<<(std::ostream & os, const Problem & p);

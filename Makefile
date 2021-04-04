@@ -4,8 +4,8 @@
 
 EXECUTABLE := optimize
 
-src := $(shell find src -name '*.cpp')
-obj := $(src:.cpp=.o)
+SRC := $(shell find src -name '*.cpp')
+OBJ := $(SRC:.cpp=.o)
 
 ##################################################################################
 # PETSc configurations
@@ -40,29 +40,54 @@ CUDA_INCLUDE := $(shell pkg-config --variable=cudainclude $(PACKAGES))
 # Other dependencies and additional flags
 ##################################################################################
 
-METAPHYSICLROOT ?= $(HOME)/.local
-EIGENROOT ?= $(shell pwd)
+METAPHYSICL_DIR ?= $(HOME)/.local
+EIGEN_DIR ?= $(shell pwd)
+HIT_DIR ?= moosetools/contrib/hit
+HIT_SRC := $(HIT_DIR)/parse.cc $(HIT_DIR)/lex.cc $(HIT_DIR)/braceexpr.cc
+HIT_OBJ := $(HIT_DIR)/libhit.so
 
 CXXFLAGS += -Iinclude
-CXXFLAGS += -Iinclude/models
+CXXFLAGS += -Iinclude/base
+CXXFLAGS += -Iinclude/objectives
+CXXFLAGS += -Iinclude/interfaces
 CXXFLAGS += -Iinclude/problems
-CXXFLAGS += -I$(METAPHYSICLROOT)/include
-CXXFLAGS += -I$(EIGENROOT)/eigen
+CXXFLAGS += -Iinclude/variables
+CXXFLAGS += -Iinclude/properties
+CXXFLAGS += -Iinclude/solvers
+CXXFLAGS += -Iinclude/utils
+
+CXXFLAGS += -I$(METAPHYSICL_DIR)/include
+CXXFLAGS += -I$(EIGEN_DIR)/eigen
+CXXFLAGS += -I$(HIT_DIR)
+
+LDFLAGS += -L$(HIT_DIR) -Wl,-rpath,$(HIT_DIR)
 LDLIBS += -lstdc++
+LDLIBS += -lhit
+
+UNAME := $(shell uname)
+ifeq ($(UNAME), Darwin)
+	DYNAMIC_LOOKUP := -undefined dynamic_lookup
+else
+	DYNAMIC_LOOKUP :=
+endif
 
 ##################################################################################
 # make rules
 ##################################################################################
 
-$(EXECUTABLE): $(obj)
+$(EXECUTABLE): $(OBJ) $(HIT_OBJ)
 	@echo 'Linking executable $@'
-	@$(LINK.cc) -o $@ $^ $(LDLIBS)
+	@$(LINK.cc) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 %.o: %.cpp
 	@echo 'Compiling with $(CC) $@'
 	@$(COMPILE.cc) $(OUTPUT_OPTION) $<
 
 .PHONY: clean print
+
+$(HIT_OBJ): $(HIT_SRC)
+	@echo 'Compiling HIT Library'
+	@g++ -I$(HIT_DIR) -std=c++11 -w -fPIC -lstdc++ -shared $(DYNAMIC_LOOKUP) $^ -o $@
 
 clean:
 	@echo Removing object files

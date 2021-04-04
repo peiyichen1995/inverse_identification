@@ -1,117 +1,188 @@
 #include "Problem.hpp"
+#include "Variable.hpp"
+#include "Objective.hpp"
+#include "Solver.hpp"
+
+Problem::Problem() : _objective(nullptr), _solver(nullptr) {}
+
+Problem::~Problem()
+{
+  delete _objective;
+  for (auto v : _variables)
+    delete v;
+}
 
 void
 Problem::init()
 {
-  unsigned int nvars = _variables.size() + _aux_variables.size();
-  _values.resize(nvars);
-  for (unsigned int i = 0; i < nvars; i++)
+  initVariableDerivatives();
+}
+
+void
+Problem::initVariableDerivatives()
+{
+  unsigned int n = numVars();
+  for (auto var : _variables)
   {
-    _values[i].value() = 0;
-    _values[i].value().derivatives()[i] = 1;
-    for (unsigned int j = 0; j < nvars; j++)
-      _values[i].derivatives()[j] = i == j ? 1 : 0;
+    ADReal & v = var->set();
+    DofId dof = _dof_map[var->name()];
+    for (unsigned int i = 0; i < n; i++)
+    {
+      DofId dof_i = _dof_map[_variables[i]->name()];
+      v.value().derivatives().insert(dof_i) = dof == dof_i ? 1 : 0;
+      v.derivatives().insert(dof_i).value() = dof == dof_i ? 1 : 0;
+      for (unsigned int j = 0; j < n; j++)
+      {
+        DofId dof_j = _dof_map[_variables[j]->name()];
+        v.derivatives().insert(dof_i).derivatives().insert(dof_j) = 0;
+      }
+    }
+  }
+}
+
+std::vector<Real>
+Problem::dofValues() const
+{
+  std::vector<Real> v(_dofs.size());
+  for (auto var : _primary_variables)
+    v[_dof_map.at(var->name())] = raw_value(var->value());
+  return v;
+}
+
+void
+Problem::setDofValues(const std::vector<Real> & v)
+{
+  for (auto var : _primary_variables)
+    var->set().value().value() = v[_dof_map[var->name()]];
+}
+
+void
+Problem::setDofValues(const Real * v)
+{
+  for (auto var : _primary_variables)
+    var->set().value().value() = v[_dof_map[var->name()]];
+}
+
+Variable *
+Problem::variable(const VariableName name) const
+{
+  for (auto v : _variables)
+    if (v->name() == name)
+      return v;
+
+  std::cout << "Trying to get variable " << name << " that doesn't exist in the problem."
+            << std::endl;
+  exit(1);
+}
+
+void
+Problem::addVariable(hit::Node * params, const bool primary)
+{
+  for (auto v : _variables)
+    if (v->name() == params->path())
+    {
+      std::cout << "Trying to add a variable " << v->name()
+                << " that already exists in the problem." << std::endl;
+      exit(1);
+    }
+  auto v = new Variable(params);
+  _variables.push_back(v);
+
+  DofId dof_id = _dof_map.size();
+  _dof_map.emplace(params->path(), dof_id);
+  if (primary)
+  {
+    _primary_variables.push_back(v);
+    _dofs.push_back(dof_id);
   }
 }
 
 void
-Problem::printInfo(std::ostream & os) const
+Problem::addObjective(hit::Node * params)
 {
-  os << "Variables: " << std::endl;
-  for (auto v : _variables)
-    os << "  " << getVariableIndex(v.first) << ": " << v.first << std::endl;
-  os << "Auxiliary Variables: " << std::endl;
-  for (auto v : _aux_variables)
-    os << "  " << getVariableIndex(v.first) << ": " << v.first << std::endl;
-}
-
-void
-Problem::printVariableValues(std::ostream & os) const
-{
-  os << "Variable values: " << std::endl;
-  for (auto v : _variables)
-    os << "  " << v.first << " = " << raw_value(getVariableValue(v.first)) << std::endl;
-  os << "Auxiliary variable values: " << std::endl;
-  for (auto v : _aux_variables)
-    os << "  " << v.first << " = " << raw_value(getVariableValue(v.first)) << std::endl;
-}
-
-void
-Problem::addVariable(std::string var_name)
-{
-  if (_variables.count(var_name) == 0)
-    _variables.emplace(var_name, _variables.size());
-}
-
-void
-Problem::addVariables(std::vector<std::string> var_names)
-{
-  for (auto v : var_names)
-    addVariable(v);
-}
-
-void
-Problem::addAuxVariable(std::string var_name)
-{
-  if (_aux_variables.count(var_name) == 0)
-    _aux_variables.emplace(var_name, _aux_variables.size());
-}
-
-void
-Problem::addAuxVariables(std::vector<std::string> var_names)
-{
-  for (auto v : var_names)
-    addAuxVariable(v);
-}
-
-unsigned int
-Problem::getVariableIndex(std::string var_name) const
-{
-  auto vit = _variables.find(var_name);
-  if (vit != _variables.end())
-    return vit->second;
-  else
+  if (_objective)
   {
-    auto avit = _aux_variables.find(var_name);
-    if (avit != _aux_variables.end())
-      return _variables.size() + avit->second;
-    else
-      std::cerr << "Error: variable " << var_name << " not found." << std::endl;
+    std::cout << "Trying to add an objective but one already exists." << std::endl;
+    exit(1);
   }
-  return 0;
+  _objective = static_cast<Objective *>(
+      Factory::createObject(params->param<std::string>("type"), this, params));
 }
 
-std::vector<unsigned int>
-Problem::getVariableIndices(std::vector<std::string> var_names) const
+Vector
+Problem::gradient(const ADReal & v) const
 {
-  std::vector<unsigned int> indices;
-  for (auto v : var_names)
-    indices.push_back(getVariableIndex(v));
-  return indices;
+  Vector g(_dofs.size());
+  for (auto i : _dofs)
+    g[i] = v.value().derivatives()[i];
+  return g;
 }
 
-const ADReal &
-Problem::getVariableValue(std::string var_name) const
+Matrix
+Problem::Hessian(const ADReal & v) const
 {
-  unsigned int index = getVariableIndex(var_name);
-  return _values[index];
-}
-
-void
-Problem::setVariableValue(unsigned int i, Real v)
-{
-  _values[i].value().value() = v;
-}
-
-void
-Problem::setVariableValue(std::string var_name, Real v)
-{
-  _values[getVariableIndex(var_name)].value().value() = v;
+  Matrix H(_dofs.size(), _dofs.size());
+  for (auto i : _dofs)
+    for (auto j : _dofs)
+      H(i, j) = v.derivatives()[i].derivatives()[j];
+  return H;
 }
 
 void
-Problem::setVariableValue(const Vector & x)
+Problem::addSolver(hit::Node * params)
 {
-  for (unsigned int i = 0; i < _variables.size(); i++)
-    setVariableValue(i, x[i]);
+  if (_solver)
+  {
+    std::cout << "Trying to add a solver but one already exists." << std::endl;
+    exit(1);
+  }
+  _solver = static_cast<Solver *>(
+      Factory::createObject(params->param<std::string>("type"), this, params));
+}
+
+void
+Problem::solve()
+{
+  _solver->solve();
+}
+
+std::ostream &
+operator<<(std::ostream & os, const Problem & p)
+{
+  os << Utils::dline << std::endl;
+  os << "Problem definition" << std::endl;
+
+  os << Utils::sline << std::endl;
+
+  os << Utils::indent(1) << "Variables:" << std::endl;
+  for (auto v : p._variables)
+    os << Utils::indent(2) << *v << std::endl;
+
+  os << Utils::sline << std::endl;
+
+  os << Utils::indent(1) << "Dof map: " << std::endl;
+  for (auto nd : p._dof_map)
+    os << Utils::indent(2) << nd.first << ": " << nd.second << std::endl;
+
+  os << Utils::sline << std::endl;
+
+  os << Utils::indent(1) << "Primary dofs: " << std::endl;
+  os << Utils::indent(2);
+  for (auto dof : p._dofs)
+    os << dof << " ";
+  os << std::endl;
+
+  os << Utils::sline << std::endl;
+
+  os << Utils::indent(1) << "Objective: " << std::endl;
+  os << Utils::indent(2) << p._objective->type() << std::endl;
+
+  os << Utils::sline << std::endl;
+
+  os << Utils::indent(1) << "Solver: " << std::endl;
+  os << Utils::indent(2) << p._solver->type() << std::endl;
+
+  os << Utils::dline << std::endl;
+
+  return os;
 }
