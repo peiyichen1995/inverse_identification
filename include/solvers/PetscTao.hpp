@@ -18,6 +18,10 @@ protected:
 private:
   registerObjectHpp(PetscTao);
 
+  std::vector<std::string> _petsc_options;
+  std::vector<std::string> _petsc_option_names;
+  std::vector<std::string> _petsc_option_values;
+
   PetscErrorCode _ierr;
   PetscMPIInt _size;
   std::vector<DofId> _dofs;
@@ -27,12 +31,5 @@ private:
   Vec _lb;
   Vec _ub;
   Mat _H;
-  // PetscReal ub_vals[] = {PETSC_INFINITY,
-  //                        PETSC_INFINITY,
-  //                        PETSC_INFINITY,
-  //                        PETSC_INFINITY,
-  //                        PETSC_INFINITY,
-  //                        PETSC_INFINITY,
-  //                        1};
   const PetscReal * _solution;
 };

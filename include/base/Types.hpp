@@ -25,4 +25,5 @@ typedef Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic> Matrix;
 
 typedef int DofId;
 typedef std::string VariableName;
+typedef std::string UserObjectName;
 typedef std::map<const VariableName, const DofId> DofMap;

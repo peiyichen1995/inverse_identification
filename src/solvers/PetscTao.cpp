@@ -3,7 +3,14 @@
 
 registerObjectCpp(PetscTao);
 
-PetscTao::PetscTao(Problem * problem, hit::Node * params) : Solver(problem, params)
+PetscTao::PetscTao(Problem * problem, hit::Node * params)
+  : Solver(problem, params),
+    _petsc_options(params->paramOptional<std::vector<std::string>>("petsc_options",
+                                                                   std::vector<std::string>())),
+    _petsc_option_names(params->paramOptional<std::vector<std::string>>(
+        "petsc_option_names", std::vector<std::string>())),
+    _petsc_option_values(params->paramOptional<std::vector<std::string>>(
+        "petsc_option_values", std::vector<std::string>()))
 {
   _ierr = PetscInitialize(PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
   if (_ierr)
@@ -34,7 +41,20 @@ PetscTao::solve()
   _ierr = TaoSetType(_tao, TAOBNTL);
 
   /* Check for TAO command line options */
-  _ierr = PetscOptionsSetValue(NULL, "-tao_monitor", NULL);
+  for (auto o : _petsc_options)
+  {
+    char option[o.length() + 1];
+    strcpy(option, o.c_str());
+    _ierr = PetscOptionsSetValue(nullptr, option, nullptr);
+  }
+  for (unsigned int i = 0; i < _petsc_option_names.size(); i++)
+  {
+    char name[_petsc_option_names[i].length() + 1];
+    char value[_petsc_option_values[i].length() + 1];
+    strcpy(name, _petsc_option_names[i].c_str());
+    strcpy(value, _petsc_option_values[i].c_str());
+    _ierr = PetscOptionsSetValue(nullptr, name, value);
+  }
   _ierr = TaoSetFromOptions(_tao);
 
   /* Set solution vec and an initial guess */
@@ -47,11 +67,13 @@ PetscTao::solve()
   _ierr = TaoSetHessianRoutine(_tao, _H, _H, formHessian, _problem);
 
   /* Set bounds */
-  // _ierr = VecCreateSeq(PETSC_COMM_WORLD, 7, &lb);
-  // _ierr = VecCreateSeq(PETSC_COMM_WORLD, 7, &ub);
-  // _ierr = VecSet(lb, 0);
-  // _ierr = VecSetValues(ub, 7, ind, ub_vals, INSERT_VALUES);
-  // _ierr = TaoSetVariableBounds(tao, lb, ub);
+  _ierr = VecCreateSeq(PETSC_COMM_WORLD, _ndof, &_lb);
+  _ierr = VecCreateSeq(PETSC_COMM_WORLD, _ndof, &_ub);
+  std::vector<Real> lb = _problem->lowerBound();
+  std::vector<Real> ub = _problem->upperBound();
+  _ierr = VecSetValues(_lb, _ndof, &_dofs[0], &lb[0], INSERT_VALUES);
+  _ierr = VecSetValues(_ub, _ndof, &_dofs[0], &ub[0], INSERT_VALUES);
+  _ierr = TaoSetVariableBounds(_tao, _lb, _ub);
 
   /* SOLVE THE APPLICATION */
   _ierr = TaoSolve(_tao);
@@ -59,8 +81,6 @@ PetscTao::solve()
   /* Print solution */
   _ierr = TaoGetSolutionVector(_tao, &_x);
   _ierr = VecGetArrayRead(_x, &_solution);
-  for (PetscInt i = 0; i < _ndof; i++)
-    std::cout << _solution[i] << std::endl;
   _ierr = VecRestoreArrayRead(_x, &_solution);
 
   /* Clean up */

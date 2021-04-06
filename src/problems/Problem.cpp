@@ -2,20 +2,21 @@
 #include "Variable.hpp"
 #include "Objective.hpp"
 #include "Solver.hpp"
+#include "UserObject.hpp"
 
 Problem::Problem() : _objective(nullptr), _solver(nullptr) {}
 
 Problem::~Problem()
 {
-  delete _objective;
   for (auto v : _variables)
     delete v;
-}
 
-void
-Problem::init()
-{
-  initVariableDerivatives();
+  delete _objective;
+
+  delete _solver;
+
+  for (auto uo : _userobjects)
+    delete uo;
 }
 
 void
@@ -98,6 +99,36 @@ Problem::addVariable(hit::Node * params, const bool primary)
 }
 
 void
+Problem::setVariableValue(const VariableName var, Real v)
+{
+  variable(var)->set().value().value() = v;
+}
+
+std::vector<Real>
+Problem::lowerBound() const
+{
+  std::vector<Real> lb(_primary_variables.size());
+  for (auto v : _primary_variables)
+  {
+    DofId dof = _dof_map.at(v->name());
+    lb[dof] = v->lowerBound();
+  }
+  return lb;
+}
+
+std::vector<Real>
+Problem::upperBound() const
+{
+  std::vector<Real> ub(_primary_variables.size());
+  for (auto v : _primary_variables)
+  {
+    DofId dof = _dof_map.at(v->name());
+    ub[dof] = v->upperBound();
+  }
+  return ub;
+}
+
+void
 Problem::addObjective(hit::Node * params)
 {
   if (_objective)
@@ -128,6 +159,21 @@ Problem::Hessian(const ADReal & v) const
   return H;
 }
 
+Real
+Problem::firstDerivative(const ADReal & v, const VariableName var1) const
+{
+  DofId i = _dof_map.at(var1);
+  return v.value().derivatives()[i];
+}
+
+Real
+Problem::secondDerivative(const ADReal & v, const VariableName var1, const VariableName var2) const
+{
+  DofId i = _dof_map.at(var1);
+  DofId j = _dof_map.at(var2);
+  return v.derivatives()[i].derivatives()[j];
+}
+
 void
 Problem::addSolver(hit::Node * params)
 {
@@ -143,7 +189,41 @@ Problem::addSolver(hit::Node * params)
 void
 Problem::solve()
 {
+  initVariableDerivatives();
   _solver->solve();
+
+  std::cout << "\n" << Utils::dline << std::endl;
+  std::cout << "Solution:" << std::endl;
+  for (auto v : _primary_variables)
+    std::cout << Utils::indent(1) << v->name() << " = " << raw_value(v->value()) << std::endl;
+  std::cout << Utils::dline << std::endl;
+}
+
+UserObject *
+Problem::userObject(const UserObjectName name) const
+{
+  for (auto uo : _userobjects)
+    if (uo->name() == name)
+      return uo;
+
+  std::cout << "Trying to get user object " << name << " that doesn't exist in the problem."
+            << std::endl;
+  exit(1);
+}
+
+void
+Problem::addUserObject(hit::Node * params)
+{
+  for (auto uo : _userobjects)
+    if (uo->name() == params->path())
+    {
+      std::cout << "Trying to add a user object " << uo->name()
+                << " that already exists in the problem." << std::endl;
+      exit(1);
+    }
+  UserObject * uo = static_cast<UserObject *>(
+      Factory::createObject(params->param<std::string>("type"), this, params));
+  _userobjects.push_back(uo);
 }
 
 std::ostream &
@@ -181,6 +261,12 @@ operator<<(std::ostream & os, const Problem & p)
 
   os << Utils::indent(1) << "Solver: " << std::endl;
   os << Utils::indent(2) << p._solver->type() << std::endl;
+
+  os << Utils::sline << std::endl;
+
+  os << Utils::indent(1) << "UserObjects: " << std::endl;
+  for (auto uo : p._userobjects)
+    os << Utils::indent(2) << uo->name() << std::endl;
 
   os << Utils::dline << std::endl;
 

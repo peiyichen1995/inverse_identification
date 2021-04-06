@@ -54,6 +54,7 @@ CXXFLAGS += -Iinclude/problems
 CXXFLAGS += -Iinclude/variables
 CXXFLAGS += -Iinclude/properties
 CXXFLAGS += -Iinclude/solvers
+CXXFLAGS += -Iinclude/userobjects
 CXXFLAGS += -Iinclude/utils
 
 CXXFLAGS += -I$(METAPHYSICL_DIR)/include
