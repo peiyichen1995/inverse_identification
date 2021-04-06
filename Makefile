@@ -41,8 +41,8 @@ CUDA_INCLUDE := $(shell pkg-config --variable=cudainclude $(PACKAGES))
 ##################################################################################
 
 METAPHYSICL_DIR ?= $(HOME)/.local
-EIGEN_DIR ?= $(shell pwd)
-HIT_DIR ?= moosetools/contrib/hit
+EIGEN_DIR ?= eigen
+HIT_DIR ?= $(shell pwd)/moosetools/contrib/hit
 HIT_SRC := $(HIT_DIR)/parse.cc $(HIT_DIR)/lex.cc $(HIT_DIR)/braceexpr.cc
 HIT_OBJ := $(HIT_DIR)/libhit.so
 
@@ -58,10 +58,10 @@ CXXFLAGS += -Iinclude/userobjects
 CXXFLAGS += -Iinclude/utils
 
 CXXFLAGS += -I$(METAPHYSICL_DIR)/include
-CXXFLAGS += -I$(EIGEN_DIR)/eigen
+CXXFLAGS += -I$(EIGEN_DIR)
 CXXFLAGS += -I$(HIT_DIR)
 
-LDFLAGS += -L$(HIT_DIR) -Wl,-rpath,$(HIT_DIR)
+LDFLAGS += -L$(HIT_DIR)
 LDLIBS += -lstdc++
 LDLIBS += -lhit
 

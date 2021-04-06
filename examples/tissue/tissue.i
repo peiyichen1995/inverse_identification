@@ -1,4 +1,4 @@
-sample = 13
+sample = 1
 angle_1 = 21
 angle_2 = 111
 
