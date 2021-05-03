@@ -1,12 +1,25 @@
 #include "Object.hpp"
+#include "Problem.hpp"
 
-Object::Object(hit::Node * params)
-  : _name(params->path()), _type(params->paramOptional<std::string>("type", "None"))
+Object::Object(Problem * problem, hit::Node * params)
+  : _problem(problem),
+    _indent(problem->indent()),
+    _name(params->path()),
+    _type(params->paramOptional<std::string>("type", "None"))
 {
-  if (_name.size() > 20)
-  {
-    std::cout << "Object name: " << _name << " is too long, maximum allowable name length is "
-              << OBJECT_NAME_MAX_LENGTH << std::endl;
-    exit(1);
-  }
+}
+
+void
+Object::print(std::ostream & os) const
+{
+  os << Utils::indent(_indent) << _name << ": " << std::endl;
+  _indent++;
+  os << Utils::indent(_indent) << "Type: " << _type;
+}
+
+std::ostream &
+operator<<(std::ostream & os, const Object & o)
+{
+  o.print(os);
+  return os;
 }

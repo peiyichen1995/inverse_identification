@@ -1,18 +1,26 @@
-sample = 1
-angle_1 = 21
-angle_2 = 111
+sample = 10
+angle_1 = 53.4
+angle_2 = 143.4
 
 [Variables]
-  [mu]
-    initial_value = 5
+  [mu1]
+    initial_value = 0
     lower_bound = 0
   []
-  [beta]
-    initial_value = 10
+  [mu2]
+    initial_value = 1
+    lower_bound = 0
+  []
+  [mu4]
+    initial_value = 20
+    lower_bound = 0
+  []
+  [beta4]
+    initial_value = 100
     lower_bound = 0
   []
   [rho]
-    initial_value = 0.25
+    initial_value = 0.5
     lower_bound = 0
     upper_bound = 1
   []
@@ -26,18 +34,26 @@ angle_2 = 111
 [UserObjects]
   [data1]
     type = TissueUniaxialTestData
-    file = 'data/sample_${sample}_${angle_1}.csv'
+    file = 'data/adventitia/sample_${sample}_${angle_1}.csv'
     angle = ${angle_1}
   []
   [data2]
     type = TissueUniaxialTestData
-    file = 'data/sample_${sample}_${angle_2}.csv'
+    file = 'data/adventitia/sample_${sample}_${angle_2}.csv'
     angle = ${angle_2}
   []
+  # [peggy]
+  #   type = PeggyModel
+  #   mu = mu4
+  #   beta = beta4
+  #   rho = rho
+  # []
   [peggy]
-    type = PeggyModel
-    mu = mu
-    beta = beta
+    type = RudyModel
+    mu1 = mu1
+    mu2 = mu2
+    mu4 = mu4
+    beta4 = beta4
     rho = rho
   []
 []
@@ -51,7 +67,7 @@ angle_2 = 111
 
 [Solver]
   type = PetscTao
-  petsc_options = '-tao_monitor'
-  petsc_option_names = ' -tao_type -tao_gatol -tao_grtol'
-  petsc_option_values = 'blmvm     1e-4       1e-4'
+  petsc_options = '-tao_cmonitor'
+  petsc_option_names = ' -tao_type -tao_gatol -tao_gttol'
+  petsc_option_values = 'blmvm     5e-3       5e-3      '
 []

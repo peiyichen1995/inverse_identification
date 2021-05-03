@@ -20,6 +20,33 @@ Problem::~Problem()
 }
 
 void
+Problem::setUp(hit::Node * root)
+{
+  // Add variables
+  std::vector<hit::Node *> vars = root->find("Variables")->children(hit::NodeType::Section);
+  for (auto var : vars)
+    addVariable(var, true);
+
+  // Add auxiliary variables
+  std::vector<hit::Node *> aux_vars = root->find("AuxVariables")->children(hit::NodeType::Section);
+  for (auto aux_var : aux_vars)
+    addVariable(aux_var, false);
+
+  // Add user objects
+  std::vector<hit::Node *> uos = root->find("UserObjects")->children(hit::NodeType::Section);
+  for (auto uo : uos)
+    addUserObject(uo);
+
+  // Add objective
+  hit::Node * obj = root->find("Objective");
+  addObjective(obj);
+
+  // Add solver
+  hit::Node * solver = root->find("Solver");
+  addSolver(solver);
+}
+
+void
 Problem::initVariableDerivatives()
 {
   unsigned int n = numVars();
@@ -86,7 +113,7 @@ Problem::addVariable(hit::Node * params, const bool primary)
                 << " that already exists in the problem." << std::endl;
       exit(1);
     }
-  auto v = new Variable(params);
+  auto v = new Variable(this, params);
   _variables.push_back(v);
 
   DofId dof_id = _dof_map.size();
@@ -227,46 +254,55 @@ Problem::addUserObject(hit::Node * params)
 }
 
 std::ostream &
-operator<<(std::ostream & os, const Problem & p)
+operator<<(std::ostream & os, Problem & p)
 {
   os << Utils::dline << std::endl;
+  p._indent = 0;
   os << "Problem definition" << std::endl;
 
   os << Utils::sline << std::endl;
-
-  os << Utils::indent(1) << "Variables:" << std::endl;
+  p._indent = 1;
+  os << Utils::indent(p._indent) << "Variables:" << std::endl;
   for (auto v : p._variables)
-    os << Utils::indent(2) << *v << std::endl;
+  {
+    p._indent = 2;
+    os << *v << std::endl;
+  }
 
   os << Utils::sline << std::endl;
-
-  os << Utils::indent(1) << "Dof map: " << std::endl;
+  p._indent = 1;
+  os << Utils::indent(p._indent) << "Dof map: " << std::endl;
   for (auto nd : p._dof_map)
-    os << Utils::indent(2) << nd.first << ": " << nd.second << std::endl;
+  {
+    p._indent = 2;
+    os << Utils::indent(p._indent) << nd.first << ": " << nd.second << std::endl;
+  }
 
   os << Utils::sline << std::endl;
-
-  os << Utils::indent(1) << "Primary dofs: " << std::endl;
-  os << Utils::indent(2);
+  p._indent = 1;
+  os << Utils::indent(p._indent) << "Primary dofs: " << std::endl;
+  p._indent = 2;
+  os << Utils::indent(p._indent);
   for (auto dof : p._dofs)
     os << dof << " ";
   os << std::endl;
 
   os << Utils::sline << std::endl;
-
-  os << Utils::indent(1) << "Objective: " << std::endl;
-  os << Utils::indent(2) << p._objective->type() << std::endl;
-
-  os << Utils::sline << std::endl;
-
-  os << Utils::indent(1) << "Solver: " << std::endl;
-  os << Utils::indent(2) << p._solver->type() << std::endl;
+  p._indent = 1;
+  os << *p._objective << std::endl;
 
   os << Utils::sline << std::endl;
+  p._indent = 1;
+  os << *p._solver << std::endl;
 
-  os << Utils::indent(1) << "UserObjects: " << std::endl;
+  os << Utils::sline << std::endl;
+  p._indent = 1;
+  os << Utils::indent(p._indent) << "UserObjects: " << std::endl;
   for (auto uo : p._userobjects)
-    os << Utils::indent(2) << uo->name() << std::endl;
+  {
+    p._indent = 2;
+    os << *uo << std::endl;
+  }
 
   os << Utils::dline << std::endl;
 

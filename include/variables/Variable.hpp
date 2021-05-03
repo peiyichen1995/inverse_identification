@@ -5,7 +5,7 @@
 class Variable : public Object
 {
 public:
-  Variable(hit::Node * params);
+  Variable(Problem * problem, hit::Node * params);
 
   const ADReal & value() const { return _value; }
   ADReal & set() { return _value; }
@@ -13,14 +13,12 @@ public:
   Real lowerBound() const { return _lower_bound; }
   Real upperBound() const { return _upper_bound; }
 
+  virtual void print(std::ostream & os = std::cout) const override;
+
 protected:
 private:
   ADReal _value;
 
   const Real _lower_bound;
   const Real _upper_bound;
-
-  friend std::ostream & operator<<(std::ostream & os, const Variable & v);
 };
-
-std::ostream & operator<<(std::ostream & os, const Variable & v);

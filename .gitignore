@@ -1,2 +1,4 @@
 optimize
 *.o
+*.txt
+**/output/**

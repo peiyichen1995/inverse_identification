@@ -1,16 +1,15 @@
 #include "Variable.hpp"
 
-Variable::Variable(hit::Node * params)
-  : Object(params),
+Variable::Variable(Problem * problem, hit::Node * params)
+  : Object(problem, params),
     _value(params->paramOptional<Real>("initial_value", 0)),
     _lower_bound(params->paramOptional<Real>("lower_bound", std::numeric_limits<Real>::min())),
     _upper_bound(params->paramOptional<Real>("upper_bound", std::numeric_limits<Real>::max()))
 {
 }
 
-std::ostream &
-operator<<(std::ostream & os, const Variable & v)
+void
+Variable::print(std::ostream & os) const
 {
-  os << v.name() << " = " << raw_value(v._value);
-  return os;
+  os << Utils::indent(_indent) << name() << " = " << raw_value(_value);
 }

@@ -14,6 +14,8 @@ public:
   Problem();
   virtual ~Problem();
 
+  void setUp(hit::Node * root);
+
   // @{ Dof related APIs
   const DofMap & dofMap() const { return _dof_map; }
   std::vector<DofId> dofs() const { return _dofs; }
@@ -50,6 +52,8 @@ public:
   void addUserObject(hit::Node * params);
   // @}
 
+  unsigned int & indent() { return _indent; }
+
 protected:
 private:
   void initVariableDerivatives();
@@ -66,7 +70,9 @@ private:
 
   std::vector<UserObject *> _userobjects;
 
-  friend std::ostream & operator<<(std::ostream & os, const Problem & p);
+  unsigned int _indent;
+
+  friend std::ostream & operator<<(std::ostream & os, Problem & p);
 };
 
 std::ostream & operator<<(std::ostream & os, const Problem & p);

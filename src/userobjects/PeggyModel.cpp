@@ -21,8 +21,8 @@ PeggyModel::PK2(const ADRankTwoTensor & F, void * context) const
   Real angle = *static_cast<Real *>(context);
   ADRankOneTensor a1(std::cos(angle), -std::sin(angle), 0);
   ADRankOneTensor a2(std::cos(angle), std::sin(angle), 0);
-  ADRankTwoTensor M1 = Utils::cross(a1, a1);
-  ADRankTwoTensor M2 = Utils::cross(a2, a2);
+  ADRankTwoTensor M1 = a1 * a1.transpose();
+  ADRankTwoTensor M2 = a2 * a2.transpose();
 
   // Project the right Cauchy strain onto tissue orientation
   ADRankTwoTensor C = F.transpose() * F;

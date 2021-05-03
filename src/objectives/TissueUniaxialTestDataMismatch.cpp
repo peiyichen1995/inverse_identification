@@ -1,5 +1,6 @@
 #include "TissueUniaxialTestDataMismatch.hpp"
 #include <algorithm>
+#include <fstream>
 
 registerObjectCpp(TissueUniaxialTestDataMismatch);
 
@@ -9,7 +10,10 @@ TissueUniaxialTestDataMismatch::TissueUniaxialTestDataMismatch(Problem * problem
     _hyperelastic_model(
         coupledUserObject<HyperelasticModel>(params->param<UserObjectName>("hyperelastic_model"))),
     _lambda_2(coupledValue(params->param<VariableName>("lambda_2"))),
-    _lambda_2_name(params->param<VariableName>("lambda_2"))
+    _lambda_2_name(params->param<VariableName>("lambda_2")),
+    _postprocess(params->paramOptional<bool>("postprocess", false)),
+    _file_names(
+        params->paramOptional<std::vector<std::string>>("file_names", std::vector<std::string>()))
 {
   const auto data_names = params->param<std::vector<UserObjectName>>("test_data");
   for (const auto data_name : data_names)
@@ -30,9 +34,8 @@ TissueUniaxialTestDataMismatch::uniaxialStress(Real lambda_1, Real angle)
   ADReal f = std::abs(S(2, 2));
   Real residual = _problem->firstDerivative(f, _lambda_2_name);
   Real residual_norm = std::abs(residual);
-  // std::cout << "=============================================\n";
-  // std::cout << "residual = " << residual_norm << ", lambda2 = " << raw_value(_lambda_2)
-  //           << std::endl;
+  // std::cout << "=========================================\n";
+  // std::cout << "r = " << residual_norm << ", lambda_2 = " << raw_value(_lambda_2) << std::endl;
 
   Real ATOL = 1e-10;
   Real RTOL = 1e-8;
@@ -57,8 +60,7 @@ TissueUniaxialTestDataMismatch::uniaxialStress(Real lambda_1, Real angle)
     f = std::abs(S(2, 2));
     residual = _problem->firstDerivative(f, _lambda_2_name);
     residual_norm = std::abs(residual);
-    // std::cout << "residual = " << residual_norm << ", lambda2 = " << raw_value(_lambda_2)
-    //           << std::endl;
+    // std::cout << "r = " << residual_norm << ", lambda_2 = " << raw_value(_lambda_2) << std::endl;
     its++;
   }
 
@@ -66,15 +68,15 @@ TissueUniaxialTestDataMismatch::uniaxialStress(Real lambda_1, Real angle)
 }
 
 ADReal
-TissueUniaxialTestDataMismatch::error(const TissueUniaxialTestData * data)
+TissueUniaxialTestDataMismatch::error(unsigned int data_i)
 {
-  const std::vector<Real> & lambda_1 = data->stretch();
-  const std::vector<Real> & stress_exp = data->stress();
+  const std::vector<Real> & lambda_1 = _datas[data_i]->stretch();
+  const std::vector<Real> & stress_exp = _datas[data_i]->stress();
+  std::vector<Real> stress_model;
   Real sigma_exp_max = *std::max_element(stress_exp.begin(), stress_exp.end());
 
   ADReal f = 0;
   _problem->setVariableValue(_lambda_2_name, 1);
-  // bool bad_guess = false;
   for (unsigned int i = 0; i < lambda_1.size(); i++)
   {
     if (i > 0)
@@ -83,18 +85,16 @@ TissueUniaxialTestDataMismatch::error(const TissueUniaxialTestData * data)
       Real lambda_2_old = raw_value(_lambda_2);
       _problem->setVariableValue(_lambda_2_name, lambda_2_old / lambda_1[i] * lambda_1_old);
     }
-    ADReal stress_model = uniaxialStress(lambda_1[i], data->angle());
-    // if (std::isnan(raw_value(stress_model)) || std::isinf(raw_value(stress_model)))
-    // {
-    //   bad_guess = true;
-    //   stress_model = 0;
-    // }
-    f += std::pow((stress_exp[i] - stress_model) / sigma_exp_max, 2);
+    ADReal stress = uniaxialStress(lambda_1[i], _datas[data_i]->angle());
+    stress_model.push_back(raw_value(stress));
+    f += std::pow((stress_exp[i] - stress) / sigma_exp_max, 2);
   }
 
-  // if (bad_guess)
-  //   std::cout << "Had a bad guess because a stress is inf or nan, retrying. Wish me good luck..."
-  //             << std::endl;
+  if (_postprocess)
+  {
+    write(_file_names[data_i], lambda_1, stress_model);
+    return 0;
+  }
 
   return f;
 }
@@ -104,10 +104,24 @@ TissueUniaxialTestDataMismatch::value()
 {
   ADReal MSE = 0;
   unsigned int N = 0;
-  for (auto data : _datas)
+  for (unsigned int i = 0; i < _datas.size(); i++)
   {
-    MSE += error(data);
-    N += data->stretch().size();
+    MSE += error(i);
+    N += _datas[i]->stretch().size();
   }
   return std::sqrt(MSE / N);
+}
+
+void
+TissueUniaxialTestDataMismatch::write(const std::string file_name,
+                                      const std::vector<Real> & x,
+                                      const std::vector<Real> & y) const
+{
+  std::ofstream out;
+  out.open(file_name);
+
+  for (unsigned int i = 0; i < x.size(); i++)
+    out << x[i] << ", " << y[i] << std::endl;
+
+  out.close();
 }
