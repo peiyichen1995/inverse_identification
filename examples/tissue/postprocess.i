@@ -24,12 +24,12 @@
 [UserObjects]
   [data1]
     type = TissueUniaxialTestData
-    file = 'data/intima/sample_${sample}_${angle_1}.csv'
+    file = 'data/${layer}/sample_${sample}_${angle_1}.csv'
     angle = ${angle_1}
   []
   [data2]
     type = TissueUniaxialTestData
-    file = 'data/intima/sample_${sample}_${angle_2}.csv'
+    file = 'data/${layer}/sample_${sample}_${angle_2}.csv'
     angle = ${angle_2}
   []
   [model]
@@ -48,8 +48,8 @@
   hyperelastic_model = model
   lambda_2 = lambda_2
   postprocess = true
-  file_names = 'output/intima/sample_${sample}_${angle_1}_${N}.csv '
-               'output/intima/sample_${sample}_${angle_2}_${N}.csv'
+  file_names = 'output/${layer}/sample_${sample}_${angle_1}_${N}.csv '
+               'output/${layer}/sample_${sample}_${angle_2}_${N}.csv'
 []
 
 [Solver]

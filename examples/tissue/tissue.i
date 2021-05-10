@@ -1,7 +1,3 @@
-sample = 10
-angle_1 = 53.4
-angle_2 = 143.4
-
 [Variables]
   [mu1]
     initial_value = 0
@@ -34,20 +30,14 @@ angle_2 = 143.4
 [UserObjects]
   [data1]
     type = TissueUniaxialTestData
-    file = 'data/adventitia/sample_${sample}_${angle_1}.csv'
+    file = 'data/${layer}/sample_${sample}_${angle_1}.csv'
     angle = ${angle_1}
   []
   [data2]
     type = TissueUniaxialTestData
-    file = 'data/adventitia/sample_${sample}_${angle_2}.csv'
+    file = 'data/${layer}/sample_${sample}_${angle_2}.csv'
     angle = ${angle_2}
   []
-  # [peggy]
-  #   type = PeggyModel
-  #   mu = mu4
-  #   beta = beta4
-  #   rho = rho
-  # []
   [peggy]
     type = RudyModel
     mu1 = mu1
