@@ -68,6 +68,6 @@ angle_2 = 143.4
 [Solver]
   type = PetscTao
   petsc_options = '-tao_cmonitor'
-  petsc_option_names = ' -tao_type -tao_gatol -tao_gttol'
-  petsc_option_values = 'blmvm     5e-3       5e-3      '
+  petsc_option_names = ' -tao_type -tao_gatol -tao_gttol -tao_max_it'
+  petsc_option_values = 'blmvm     1e-3       1e-3       50'
 []

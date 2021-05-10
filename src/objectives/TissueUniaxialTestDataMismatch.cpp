@@ -24,18 +24,16 @@ ADReal
 TissueUniaxialTestDataMismatch::uniaxialStress(Real lambda_1, Real angle)
 {
   // Solve for lambda2 such that S(2,2) = 0
-  Real lambda_2_initial = raw_value(_lambda_2);
+  Real lambda_2_initial = raw_value(_lambda_2) - 0.05;
 
   ADRankTwoTensor F;
   F(0, 0) = lambda_1;
   F(1, 1) = _lambda_2;
   F(2, 2) = 1 / lambda_1 / _lambda_2;
   ADRankTwoTensor S = _hyperelastic_model->PK2(F, &angle);
-  ADReal f = std::abs(S(2, 2));
+  ADReal f = S(2, 2) * S(2, 2) / _lambda_2;
   Real residual = _problem->firstDerivative(f, _lambda_2_name);
   Real residual_norm = std::abs(residual);
-  // std::cout << "=========================================\n";
-  // std::cout << "r = " << residual_norm << ", lambda_2 = " << raw_value(_lambda_2) << std::endl;
 
   Real ATOL = 1e-10;
   Real RTOL = 1e-8;
@@ -57,10 +55,9 @@ TissueUniaxialTestDataMismatch::uniaxialStress(Real lambda_1, Real angle)
     F(1, 1) = _lambda_2;
     F(2, 2) = 1 / lambda_1 / _lambda_2;
     S = _hyperelastic_model->PK2(F, &angle);
-    f = std::abs(S(2, 2));
+    f = S(2, 2) * S(2, 2) / _lambda_2;
     residual = _problem->firstDerivative(f, _lambda_2_name);
     residual_norm = std::abs(residual);
-    // std::cout << "r = " << residual_norm << ", lambda_2 = " << raw_value(_lambda_2) << std::endl;
     its++;
   }
 
