@@ -21,7 +21,7 @@ TissueUniaxialTestDataMismatch::TissueUniaxialTestDataMismatch(Problem * problem
 }
 
 ADReal
-TissueUniaxialTestDataMismatch::uniaxialStress(Real lambda_1, Real angle)
+TissueUniaxialTestDataMismatch::uniaxialStress(Real lambda_1, ADReal angle)
 {
   // Solve for lambda2 such that S(2,2) = 0
   Real lambda_2_initial = raw_value(_lambda_2) - 0.05;

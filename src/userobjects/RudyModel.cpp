@@ -20,7 +20,7 @@ RudyModel::PK2(const ADRankTwoTensor & F, void * context) const
   I2.setIdentity();
 
   // Tissue orientation
-  Real angle = *static_cast<Real *>(context);
+  ADReal angle = *static_cast<ADReal *>(context);
   ADRankOneTensor a1(std::cos(angle), -std::sin(angle), 0);
   ADRankOneTensor a2(std::cos(angle), std::sin(angle), 0);
   ADRankTwoTensor M1 = a1 * a1.transpose();

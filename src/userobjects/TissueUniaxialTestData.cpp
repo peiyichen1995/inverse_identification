@@ -5,7 +5,8 @@ registerObjectCpp(TissueUniaxialTestData);
 TissueUniaxialTestData::TissueUniaxialTestData(Problem * problem, hit::Node * params)
   : UserObject(problem, params),
     _file_name(params->param<std::string>("file")),
-    _angle(params->param<Real>("angle") / 180 * M_PI)
+    _angle(params->param<Real>("angle") / 180 * M_PI),
+    _add_half_pi(params->paramOptional<bool>("add_half_pi", false))
 {
   read();
 }

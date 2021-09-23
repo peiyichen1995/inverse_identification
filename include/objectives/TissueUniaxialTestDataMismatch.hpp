@@ -12,12 +12,9 @@ public:
   virtual ADReal value() override;
 
 protected:
-private:
-  registerObjectHpp(TissueUniaxialTestDataMismatch);
-
-  ADReal uniaxialStress(Real lambda_1, Real angle);
-  ADReal error(unsigned int i);
-  void write(const std::string file_name,
+  virtual ADReal uniaxialStress(Real lambda_1, ADReal angle);
+  virtual ADReal error(unsigned int i);
+  virtual void write(const std::string file_name,
              const std::vector<Real> & x,
              const std::vector<Real> & y) const;
 
@@ -30,4 +27,6 @@ private:
   const std::vector<std::string> _file_names;
 
   std::vector<const TissueUniaxialTestData *> _datas;
+private:
+  registerObjectHpp(TissueUniaxialTestDataMismatch);
 };
