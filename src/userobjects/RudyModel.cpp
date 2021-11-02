@@ -55,6 +55,13 @@ RudyModel::PK2(const ADRankTwoTensor & F, void * context) const
   ADRankTwoTensor S_ti_2 =
       4 * _mu4 * ((1 - _rho) * (C.trace() - 3) * I2 + _rho * e2pos * M2) *
       std::exp(_beta4 * ((1 - _rho) * (C.trace() - 3) * (C.trace() - 3) + _rho * e2pos * e2pos));
+  // ADRankTwoTensor S_ti_1 =
+  //     e1pos * 4 * _mu4 * ((1 - _rho) * (C.trace() - 3) * I2 + _rho * e1pos * M1) *
+  //     std::exp(_beta4 * ((1 - _rho) * (C.trace() - 3) * (C.trace() - 3) + _rho * e1pos * e1pos));
+  // ADRankTwoTensor S_ti_2 =
+  //     e2pos * 4 * _mu4 * ((1 - _rho) * (C.trace() - 3) * I2 + _rho * e2pos * M2) *
+  //     std::exp(_beta4 * ((1 - _rho) * (C.trace() - 3) * (C.trace() - 3) + _rho * e2pos * e2pos));
+
   ADRankTwoTensor S = S_isc + S_ti_1 + S_ti_2;
 
   return S;
